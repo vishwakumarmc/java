@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,7 +27,7 @@ public class Sample {
             dates.add(startDate);
             startDate = startDate.plusDays(1);
         }
-        //System.out.println(dates);
+        System.out.println(startDate);
 
         LocalDate sDate = LocalDate.parse("1984-08-11");
         LocalDate eDate = LocalDate.parse("2025-08-11");
@@ -43,11 +45,11 @@ public class Sample {
         System.out.println(square);
 
         int even = list.stream().filter(i->i%2==0).collect(Collectors.toList()).size();
-        System.out.println(even);
+        System.out.println("Even Size: "+even);
 
         //Sum of even numbers
-        int sum = list.stream().filter(i->i%2==0).collect(Collectors.toList()).stream().reduce(0,(a,b)->a+b);
-        System.out.println(sum);
+        int sum = list.stream().filter(i->i%2==0).reduce(0,(a,b)->a+b);
+        System.out.println("Sum: "+sum);
 
         System.out.println("------------------Product-------------------");
         List<Product> products = new ArrayList<>();
@@ -64,7 +66,7 @@ public class Sample {
         s1.forEach(pr->System.out.println(pr.name));
 
         //Sum of all prices
-        Float totalPrice = products.stream().map(i->i.price).collect(Collectors.toList()).stream().reduce(0f,(a,b)->a+b);
+        Float totalPrice = products.stream().map(i->i.price).reduce(0f,(a,b)->a+b);
         System.out.println(totalPrice);
 
         //Filter based on price
@@ -106,23 +108,49 @@ public class Sample {
                 .collect(Collectors.groupingBy(Item::getName,
                         TreeMap::new,
                         Collectors.summingInt(Item::getQty)));
-        System.out.println("All items: "+ prices);
+        System.out.println("Group by name: "+ prices);
 
-        //Group by quantity
         Map<Integer,List<String>> groupByQty = items.stream()
                 .collect(Collectors.groupingBy(Item::getQty,
                         TreeMap::new,
                         Collectors.mapping(Item::getName, Collectors.toList())));
         System.out.println("Group by quantity: "+groupByQty);
 
-        //Group by price
         Map<BigDecimal,List<String>> groupByPrice = items.stream()
-                .collect(Collectors.groupingBy(
-                        Item::getPrice,
+                .collect(Collectors.groupingBy(Item::getPrice,
                         TreeMap::new,
                         Collectors.mapping(Item::getName, Collectors.toList())));
         System.out.println("Group by price: "+groupByPrice);
 
+        //Group by length and count
+        List<String> str = Arrays.asList("kiwi","apple","banana","orange","grapes","peach");
+        Map<Integer,Long> counts = str.stream().
+                collect(Collectors.groupingBy(String::length, Collectors.collectingAndThen(Collectors.counting(), c->c)));
+        System.out.println("Count by length: "+counts);
+
+        //Group by identity and count occurrence
+        List<String> lists = Arrays.asList("kiwi","apple","banana","apple","orange","kiwi","apple");
+        Map<String,Long> occurences = lists.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        System.out.println("Count by identity: "+occurences);
+
+        //Concurrent modification exception on ArrayList
+        //List<String> l = new ArrayList<>();
+        List<String> l = new CopyOnWriteArrayList<>();
+
+        l.add("one");
+        l.add("two");
+        l.add("three");
+
+        try{
+            Iterator<String> i = l.iterator();
+            while(i.hasNext()){
+                System.out.println(i.next() +", ");
+                l.add("four");
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+       // System.out.println(l);
 
     }
 
